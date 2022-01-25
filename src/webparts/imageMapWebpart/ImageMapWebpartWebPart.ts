@@ -35,7 +35,8 @@ export default class ImageMapWebpartWebPart extends BaseClientSideWebPart<IImage
 
   public render(): void {
 
-
+    var instanceid = this.context.instanceId;
+		var instance = instanceid.split("-")[0];
 
     var file;
     if(this.properties.filePickerResult!=undefined){file = this.properties.filePickerResult.fileAbsoluteUrl} else {file=""}
@@ -46,21 +47,31 @@ export default class ImageMapWebpartWebPart extends BaseClientSideWebPart<IImage
 
 
 
-    <div id="image">
+    <div id="image`+instance+`"  style="width:100%; margin:auto">
 
     </div>
 
-    <div id="render">`+this.properties.htmlCode+`</div>
+    <div id="render`+instance+`" style="width:100%; margin:auto">`+this.properties.htmlCode+`</div>
          `;
-         var left;
-         var top;
-        var width: number;
+         var left = "auto";
+         let top = "auto";
+         let width: number = this.domElement.getBoundingClientRect().width;
 
          if(this.displayMode==2){
-          left="0px";top="-20px";width=this.domElement.getBoundingClientRect().width  } else{left="-20px";top="-20px";width=1140}
-         if(this.properties.mode==undefined||this.properties.mode=="edit"){$("#render").hide()} else if(this.properties.mode=="view"){$("#image").hide()}
-         if(this.properties.htmlCode==undefined||this.properties.htmlCode==""){$("#image").append(  `<img style="width:`+width+`px;position:relative;left:`+left+`;top:`+top+`" src="`+file+`" id="target" alt="[Text Over Example]" />`)} else{$("#image").html(this.properties.htmlCode) }
-        $('#image img').click(function(e) {
+
+
+
+
+        } else if(this.displayMode==1){ width=width+16}
+         if(this.displayMode==2){
+           var renderid="#render"+instance;
+           var imageid="#image"+instance;
+           var imageref="#image"+instance +" img";
+           width=width+16
+           $(renderid).hide()} else if(this.displayMode==1){$(imageid).hide()}
+         if(this.properties.htmlCode==undefined||this.properties.htmlCode==""){$(imageid).append(  `<img class="mapimage" style="width:`+width+`px !important; max-width:`+width+`px !important;position:relative;" src="`+file+`" id="target" alt="[Text Over Example]" />`)} else{$(imageid).html(this.properties.htmlCode) }
+        $(imageref).click(function(e) {
+          if($("#spPropertyPaneContainer > div").length ==1){
           var offset = $(this).offset();
 
           var left = e.pageX - offset.left;
@@ -70,30 +81,61 @@ export default class ImageMapWebpartWebPart extends BaseClientSideWebPart<IImage
 
 
           let text;
+
           let title = prompt("Text", "Image Map");
           let person = prompt("Url", "#");
+          var open;
+          if(person.indexOf(window.location.protocol + "//" + window.location.host) > -1){
 
+            open = "_self";
+
+          } else {
+
+            open = "_blank";
+
+          }
           if (person == null || person == "") {
             text = "User cancelled the prompt.";
           } else {
-            $("#image").append(`
-          <a uk-tooltip="`+title+`" class="uk-position-absolute uk-transform-center" style="left: `+left+`px; top:`+top+`px" data-interception="off"  href="`+person+`" uk-marker></a>
-          `)
+            if(isImgLink(person)){
+              if($("#spPropertyPaneContainer > div").length ==1){
+            $(imageid).append(`<div uk-lightbox>
+          <a uk-tooltip="`+title+`" class="uk-position-absolute uk-transform-center" data-caption="`+title+`" style="left: `+left+`px; top:`+top+`px" data-interception="off" target=`+open+` href="`+person+`" uk-marker></a>
+          </div>`)}} else {if($("#spPropertyPaneContainer > div").length ==1){
+            $(imageid).append(` <a uk-tooltip="`+title+`" class="uk-position-absolute uk-transform-center" style="left: `+left+`px; top:`+top+`px" data-interception="off" target=`+open+` href="`+person+`" uk-marker></a>
+            `) }}
+          console.log($("#spPropertyPaneContainer > div").length)
+            $('div[data-automation-id="propertyPaneGroupField"] > button').click()
           }
 
+        }});
+        var imagemarker = imageid  +" .uk-marker"
+        $(imagemarker).on('click', function(event){
+          if(this.displayMode==2){
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+
+          }
         });
-
-        $("#image .uk-marker").on('dblclick', function(event){
-
+        function isImgLink(url) {
+          if(typeof url !== 'string') return false;
+          return(url.match(/^http[^\?]*.(jpg|jpeg|gif|png|tiff|bmp)(\?(.*))?$/gmi) != null);
+      }
+        $(imagemarker).on('dblclick', function(event){
+          if($("#spPropertyPaneContainer > div").length ==1){
           event.stopPropagation();
           event.stopImmediatePropagation();
           let title = prompt("Title", $(this).attr("uk-tooltip"));
           let person = prompt("Url", $(this).attr("src"));
           $(this).attr("uk-tooltip",title)
           $(this).attr("src",person)
-        });
+          $('div[data-automation-id="propertyPaneGroupField"] > button').click()
+        }});
 
-        $('#image .uk-marker').mousedown(function(event) {
+        $("a.uk-marker").contextmenu(function (e) { e.preventDefault(); }, false);
+        $(imagemarker).mousedown(function(event) {
+          event.preventDefault();
+          if($("#spPropertyPaneContainer > div").length ==1){
           switch (event.which) {
 
               case 3:
@@ -101,9 +143,20 @@ export default class ImageMapWebpartWebPart extends BaseClientSideWebPart<IImage
                   break;
 
           }
-      });
+          $('div[data-automation-id="propertyPaneGroupField"] > button').click()
+        }});
+var offset;
+$("#offset").remove()
+if(this.domElement.getBoundingClientRect().width==1204 && this,this.displayMode==1){$("body").append(`<style id="offset">      .mapimage{left:-15px;top:-30px;}</style>`)}
+if(this.domElement.getBoundingClientRect().width>1204 && this,this.displayMode==1){$("body").append(`<style id="offset">   </style>`)
+
+
+}
+console.log(width);
+
+
     $("body").append(`<style>
-    .uk-marker:hover{background:red;color:black}
+
     .loginPopup {
       position: relative;
       text-align: center;
@@ -153,7 +206,18 @@ export default class ImageMapWebpartWebPart extends BaseClientSideWebPart<IImage
     .openButton:hover {
       opacity: 1;
     }
+    .uk-marker {
+      padding: 5px;
+      background: #031795;
+      color: #fff;
+      border-radius: 500px;
+  }
 
+  .uk-marker:hover {
+      background: #f6f8fb;
+      color: #031795
+  }
+#workbenchPageContent{max-width:1204px}
     </style>`)
     function openForm() {
 
@@ -171,7 +235,10 @@ export default class ImageMapWebpartWebPart extends BaseClientSideWebPart<IImage
 
     }
     private instructions(): any {
-      this.properties.htmlCode = $("#image").html();
+      var instanceid = this.context.instanceId;
+      var instance = instanceid.split("-")[0];
+      var imageid = "#image"+instance
+      this.properties.htmlCode = $(imageid).html();
 
 
 
@@ -211,19 +278,16 @@ export default class ImageMapWebpartWebPart extends BaseClientSideWebPart<IImage
                       icon: "Save",
                       onClick: this.instructions.bind(this),
                       disabled: false,
-                    }),
-                    PropertyPaneDropdown('mode', {
-                      label: "Select Mode",
-                      options: [{key:'edit',text:'Edit Mode'},{key:'view',text:'View Mode'}],
 
                     }),
+
                     PropertyFieldCodeEditor('htmlCode', {
                       label: 'Edit HTML Code',
                       panelTitle: 'Edit HTML Code',
                       initialValue: this.properties.htmlCode,
                       onPropertyChange: this.onPropertyPaneFieldChanged,
                       properties: this.properties,
-                      disabled: false,
+                      disabled: true,
                       key: 'codeEditorFieldId',
                       language: PropertyFieldCodeEditorLanguages.HTML,
                       options: {
